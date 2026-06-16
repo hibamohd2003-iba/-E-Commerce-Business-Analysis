@@ -73,7 +73,8 @@ A comprehensive business transformation analysis of a Brazilian e-commerce platf
 - **ROI:** 273%
 - **Payback Period:** 9 months
 - **3-Year NPV (10% discount):** R$8.2M
-
+📂 Repository Structure
+```
 E-Commerce-Business-Analysis/
 ├── README.md (this file)
 ├── LICENSE (MIT)
@@ -134,9 +135,8 @@ E-Commerce-Business-Analysis/
     ├── processed/
     │   └── README.md
     └── README.md
-    ---
-    
-   
+```
+---
     ## 🎓 How to Use This Repository
 
 ### For Hiring Managers / Stakeholders

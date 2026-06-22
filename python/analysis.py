@@ -68,7 +68,6 @@ class ECommerceAnalysis:
         orders = self.data['orders']
         order_items = self.data['order_items']
         
-        # Merge to get revenue by order
         merged = orders.merge(order_items, on='order_id')
         merged['order_month'] = pd.to_datetime(merged['order_purchase_timestamp']).dt.to_period('M')
         
@@ -110,18 +109,13 @@ class ECommerceAnalysis:
         orders = self.data['orders']
         order_items = self.data['order_items']
         
-        # Get last purchase date for each customer
         orders['order_date'] = pd.to_datetime(orders['order_purchase_timestamp'])
         last_purchase = orders.groupby('customer_id')['order_date'].max().reset_index()
         last_purchase.columns = ['customer_id', 'last_purchase_date']
         
-        # Current date (use latest date in dataset)
         current_date = orders['order_date'].max()
-        
-        # Calculate days since last purchase
         last_purchase['days_since_purchase'] = (current_date - last_purchase['last_purchase_date']).dt.days
         
-        # Get customer value
         customer_value = order_items.merge(orders[['order_id', 'customer_id']], on='order_id')
         customer_value = customer_value.groupby('customer_id').agg({
             'price': 'sum',
@@ -129,14 +123,19 @@ class ECommerceAnalysis:
         }).reset_index()
         customer_value['total_value'] = customer_value['price'] + customer_value['freight_value']
         
-        # Merge
         churn = last_purchase.merge(customer_value[['customer_id', 'total_value']], on='customer_id')
         
-        # Categorize (based on days inactive and time in business)
-        max_days = churn['days_since_purchase'].max()
-        churn['status'] = pd.cut(churn['days_since_purchase'], 
-                                 bins=[0, 30, 90, max_days],
-                                 labels=['Active', 'Dormant', 'Churned'])
+        def categorize(days):
+            if days <= 90:
+                return 'Active'
+            elif days <= 180:
+                return 'Dormant'
+            elif days <= 365:
+                return 'At Risk'
+            else:
+                return 'Churned'
+        
+        churn['status'] = churn['days_since_purchase'].apply(categorize)
         
         summary = churn.groupby('status').agg({
             'customer_id': 'count',
@@ -155,12 +154,10 @@ class ECommerceAnalysis:
         products = self.data['products']
         categories = self.data['categories']
         
-        # Merge to get category names
         df = reviews.merge(order_items[['order_id', 'product_id']], on='order_id')
         df = df.merge(products[['product_id', 'product_category_name']], on='product_id')
         df = df.merge(categories, on='product_category_name', how='left')
         
-        # Calculate ratings by category
         ratings = df.groupby('product_category_name_english').agg({
             'review_id': 'count',
             'review_score': 'mean'
@@ -198,12 +195,6 @@ class ECommerceAnalysis:
 if __name__ == "__main__":
     print("🚀 E-Commerce Analysis Script")
     print("="*60)
-    
-    # Example usage:
-    # analysis = ECommerceAnalysis("path/to/csv/folder")
-    # health = analysis.query_1_1_business_health()
-    # print(health)
-    
     print("\n📝 Usage Instructions:")
     print("  1. Download dataset from Kaggle")
     print("  2. Extract CSV files to a folder")
